@@ -10,25 +10,61 @@ Original file is located at
 #!pip install streamlit
 #!pip install catboost
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import pickle
-from catboost import CatBoostRegressor
-from PIL import Image
-
-# Load model
+# --- Load Model ---
 try:
     with open("catboost_model_quikr.pkl", "rb") as f:
         model = pickle.load(f)
 except FileNotFoundError:
     st.error("Error: 'catboost_model_quikr.pkl' not found. Please ensure the model file is in the same directory.")
-    st.stop() # Stop execution if model isn't found
+    st.stop()
 except Exception as e:
     st.error(f"An error occurred while loading the model: {e}")
     st.stop()
 
-# Konfigurasi halaman
+
+# --- Load and Preprocess Data for Filtering ---
+# This DataFrame is used *only* for populating selectboxes, not for model training.
+try:
+    df_filter_data = pd.read_csv("mobilbekas.csv.xlsx - mobilbekas.csv")
+    # Basic cleaning for relevant columns to ensure filtering works
+    if 'harga' in df_filter_data.columns:
+        df_filter_data['harga'] = pd.to_numeric(df_filter_data['harga'], errors='coerce')
+    if 'tahun' in df_filter_data.columns:
+        df_filter_data['tahun'] = pd.to_numeric(df_filter_data['tahun'], errors='coerce')
+    if 'jarak_tempuh' in df_filter_data.columns:
+        # Re-using the parse_kms function for consistency
+        def parse_kms(km_str):
+            if pd.isna(km_str): return np.nan
+            km_str = str(km_str).replace(".", "").replace(",", "").strip()
+            digits = re.findall(r'\d+', km_str)
+            if digits:
+                if '-' in km_str:
+                    parts = [int(p) for p in digits]
+                    return (parts[0] + parts[1]) / 2 if len(parts) >= 2 else int(digits[0])
+                return int(digits[0])
+            return np.nan
+        df_filter_data['jarak_tempuh'] = df_filter_data['jarak_tempuh'].apply(parse_kms)
+    
+    # Ensure key filtering columns are strings to avoid type issues in selectbox
+    for col in ['merek', 'model', 'tipe_bahan_bakar', 'transmisi', 'warna', 'varian']:
+        if col in df_filter_data.columns:
+            df_filter_data[col] = df_filter_data[col].astype(str).fillna('Unknown')
+        else:
+            st.warning(f"Kolom '{col}' tidak ditemukan di dataset untuk filtering.")
+            df_filter_data[col] = 'Unknown' # Add if missing to prevent errors
+            
+    # Drop rows with NaN in essential filtering columns before generating unique lists
+    df_filter_data.dropna(subset=['merek', 'model', 'tipe_bahan_bakar', 'transmisi'], inplace=True)
+
+
+except FileNotFoundError:
+    st.error("Error: 'mobilbekas.csv.xlsx - mobilbekas.csv' not found. This file is needed for dynamic filtering.")
+    st.stop()
+except Exception as e:
+    st.error(f"An error occurred while loading or processing the dataset for filtering: {e}")
+    st.stop()
+
+# --- Konfigurasi Halaman & Judul ---
 st.set_page_config(page_title="Prediksi Harga Mobil Bekas", layout="centered", page_icon="🚗")
 st.markdown("""
     <style>
@@ -44,73 +80,50 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Judul
-st.title("Prediksi Harga Mobil Bekas")
-st.markdown("""
-Gunakan aplikasi ini untuk memprediksi harga mobil bekas berdasarkan data kendaraan Anda.
-""")
-
-
-# Daftar nama mobil dan jenis bahan bakar yang valid (sesuaikan jika perlu dari data Anda)
-# Untuk demo, ini bisa diperluas atau diambil dari model jika Anda punya daftar uniknya
-car_names = [
-    'Audi A6', 'BMW 5 Series', 'Chevrolet Beat', 'Datsun GO', 'Fiat Punto',
-    'Force Gurkha', 'Ford Ecosport', 'Hindustan Ambassador', 'Honda City', 'Hyundai i20',
-    'Jeep Compass', 'Mahindra XUV500', 'Maruti Swift', 'Mercedes C-Class', 'Mitsubishi Pajero',
-    'Nissan Micra', 'Renault Kwid', 'Skoda Rapid', 'Tata Nano', 'Toyota Fortuner',
-    'Volkswagen Polo', 'Daihatsu Ayla', 'Wuling Confero', 'Mazda CX-5', 'Chery QQ',
-    'Suzuki Karimun', 'Hyundai Creta', 'DFSK Glory' # Added from training script's lists
-]
-
-# Assuming 'Petrol', 'Diesel', 'Hybrid' are common fuel types.
-# This list could be dynamically populated from the training data unique values if known.
-common_fuel_types = ['Petrol', 'Diesel', 'Hybrid', 'Gasoline', 'Electric']
-
-# Common colors - expand this list based on your dataset's unique colors
-common_colors = [
-    'White', 'Black', 'Silver', 'Grey', 'Red', 'Blue', 'Brown', 'Green', 'Orange', 'Yellow', 'Gold', 'Purple'
-]
-
-# Common transmission types - expand this list based on your dataset's unique transmissions
-common_transmission_types = [
-    'Manual', 'Automatic', 'CVT', 'AMT'
-]
-
-# Common variants - this is highly specific to models, so a simple list is a placeholder.
-# In a real app, this might be dynamically loaded based on selected 'Merek' and 'Model'.
-common_variants = [
-    'Standard', 'Luxury', 'Sport', 'Hybrid', 'GLX', 'G', 'E', 'S', 'SE', 'LE', 'X', 'V', 'R', 'Limited'
-]
-
-
-# Layout Streamlit
-# st.set_page_config(page_title="Prediksi Harga Mobil Bekas", layout="centered") # Already set above
 st.title("🚗 Prediksi Harga Mobil Bekas")
 st.markdown("Isi detail mobil di bawah untuk mendapatkan estimasi harga.")
 
-# Input pengguna
-# Name here corresponds to 'model' in training script
-name_input = st.selectbox("Pilih Model Mobil", sorted(list(set(car_names))))
+# --- Input Pengguna dengan Filter Berurutan ---
 
-# Extract company (merek) from model name or let user input if preferred.
-# For simplicity, if model is "Audi A6", company is "Audi"
-company_input = st.text_input("Merek / Brand", value=name_input.split()[0] if name_input else "Unknown")
+# 1. Filter Merek
+unique_merek = sorted(df_filter_data['merek'].unique().tolist())
+company_input = st.selectbox("Pilih Merek / Brand", unique_merek)
 
+# Filter data berdasarkan merek yang dipilih
+filtered_by_merek = df_filter_data[df_filter_data['merek'] == company_input]
 
-fuel_type_input = st.selectbox("Tipe Bahan Bakar", sorted(common_fuel_types))
+# 2. Filter Model berdasarkan Merek
+unique_model = sorted(filtered_by_merek['model'].unique().tolist())
+if not unique_model: # Handle case where no models found for selected brand
+    unique_model = ['Tidak Ada Model Ditemukan']
+name_input = st.selectbox("Pilih Model Mobil", unique_model)
+
+# Filter data berdasarkan merek dan model yang dipilih
+filtered_by_model = filtered_by_merek[filtered_by_merek['model'] == name_input]
+
+# 3. Filter Tipe Bahan Bakar berdasarkan Merek dan Model
+unique_fuel_types = sorted(filtered_by_model['tipe_bahan_bakar'].unique().tolist())
+if not unique_fuel_types:
+    unique_fuel_types = ['Tidak Ada'] # Default if no data
+fuel_type_input = st.selectbox("Pilih Tipe Bahan Bakar", unique_fuel_types)
+
+# 4. Filter Tipe Transmisi berdasarkan Merek dan Model
+unique_transmission_types = sorted(filtered_by_model['transmisi'].unique().tolist())
+if not unique_transmission_types:
+    unique_transmission_types = ['Tidak Ada'] # Default if no data
+transmission_type_input = st.selectbox("Pilih Tipe Transmisi", unique_transmission_types)
+
+# Common colors and variants (these are not filtered by other inputs currently)
+common_colors = sorted(df_filter_data['warna'].astype(str).unique().tolist())
+common_variants = sorted(df_filter_data['varian'].astype(str).unique().tolist()) # Ensure varian is string
+
+color_input = st.selectbox("Warna Mobil", common_colors)
+variant_input = st.selectbox("Varian Mobil", common_variants)
+
+# Other static inputs
 age_input = st.slider("Umur Mobil (tahun)", 0, 30, 5) # Corresponds to 'age'
 kms_driven_input = st.number_input("Jarak Tempuh (dalam KM)", min_value=0, step=1000) # Corresponds to 'jarak_tempuh'
 
-# New inputs
-variant_input = st.selectbox("Varian Mobil", sorted(common_variants)) # Corresponds to 'varian'
-color_input = st.selectbox("Warna Mobil", sorted(common_colors)) # Corresponds to 'warna'
-transmission_type_input = st.selectbox("Tipe Transmisi", sorted(common_transmission_types)) # Corresponds to 'transmisi'
-
-
-# Validasi bahan bakar tidak umum (optional, if you have this data for every car_name)
-# For now, let's remove this or keep it very general as we don't have valid_fuels_per_car for all new models.
-# if fuel_type_input not in valid_fuels_per_car.get(name_input, []):
-#     st.warning(f"⚠️ Kombinasi {name_input} dan {fuel_type_input} mungkin tidak umum.")
 
 # --- Feature Engineering to match the model's training script ---
 # These calculations must mirror the training script exactly.
@@ -119,6 +132,7 @@ transmission_type_input = st.selectbox("Tipe Transmisi", sorted(common_transmiss
 company_model_feature = f"{company_input}_{name_input}"
 
 # segment (based on estimated price, as actual price is unknown for prediction)
+# Use a heuristic for base_prices if needed, or refine based on actual data
 base_prices = {
     'Audi A6': 650_000_000, 'BMW 5 Series': 700_000_000, 'Mercedes C-Class': 750_000_000,
     'Toyota Fortuner': 350_000_000, 'Honda City': 300_000_000, 'Hyundai i20': 250_000_000,
@@ -178,9 +192,9 @@ features_df = pd.DataFrame([{
     'is_premium': is_premium_feature,
     'is_high_value': is_high_value_feature,
     'is_low_budget': is_low_budget_feature,
-    'transmisi': transmission_type_input, # New feature
-    'warna': color_input,                # New feature
-    'varian': variant_input               # New feature
+    'transmisi': transmission_type_input,
+    'warna': color_input,
+    'varian': variant_input
 }])
 
 # Prediksi harga
