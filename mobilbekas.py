@@ -28,14 +28,10 @@ except Exception as e:
     st.error(f"An error occurred while loading the model: {e}")
     st.stop()
 
-# Contoh, sesuaikan path ini sesuai lokasi file Anda di Drive
-
-df_filter_data = pd.read_csv("mobilbekas.csv")
-
 # --- Load and Preprocess Data for Filtering ---
 # This DataFrame is used *only* for populating selectboxes, not for model training.
 try:
-    df_filter_data = pd.read_csv("mobilbekas.csv.xlsx - mobilbekas.csv")
+    df_filter_data = pd.read_csv("mobilbekas.csv")
     # Basic cleaning for relevant columns to ensure filtering works
     if 'harga' in df_filter_data.columns:
         df_filter_data['harga'] = pd.to_numeric(df_filter_data['harga'], errors='coerce')
