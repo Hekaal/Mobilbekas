@@ -9,6 +9,12 @@ Original file is located at
 
 #!pip install streamlit
 #!pip install catboost
+import streamlit as st
+import pandas as pd
+import numpy as np
+import pickle
+from catboost import CatBoostRegressor
+from PIL import Image
 
 # --- Load Model ---
 try:
