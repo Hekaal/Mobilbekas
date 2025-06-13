@@ -28,17 +28,6 @@ except Exception as e:
     st.error(f"An error occurred while loading the model: {e}")
     st.stop()
 
-# Load model
-try:
-    with open("catboost_model_quikr.pkl", "rb") as f:
-        model = pickle.load(f)
-except FileNotFoundError:
-    st.error("Error: 'catboost_model_quikr.pkl' not found. Please ensure the model file is in the same directory.")
-    st.stop() # Stop execution if model isn't found
-except Exception as e:
-    st.error(f"An error occurred while loading the model: {e}")
-    st.stop()
-
 # Konfigurasi halaman
 st.set_page_config(page_title="Prediksi Harga Mobil Bekas", layout="centered", page_icon="🚗")
 st.markdown("""
@@ -204,4 +193,3 @@ if st.button("Prediksi Harga"):
     except Exception as e:
         st.error(f"Terjadi kesalahan saat melakukan prediksi: {e}")
         st.info("Pastikan semua input sudah diisi dengan benar dan model sudah dimuat.")
-
