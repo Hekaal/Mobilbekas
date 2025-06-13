@@ -30,7 +30,7 @@ except Exception as e:
 
 # Contoh, sesuaikan path ini sesuai lokasi file Anda di Drive
 
-df_filter_data = pd.read_csv("/content/mobilbekas.csv")
+df_filter_data = pd.read_csv("mobilbekas.csv")
 
 # --- Load and Preprocess Data for Filtering ---
 # This DataFrame is used *only* for populating selectboxes, not for model training.
