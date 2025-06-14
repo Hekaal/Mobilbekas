@@ -171,7 +171,6 @@ with st.sidebar:
         * **RMSE (Root Mean Squared Error):** Rp 41.992.638
         * **R² (R-squared):** 0.963
         
-        Nilai R² yang tinggi (mendekati 1) menunjukkan bahwa model dapat menjelaskan sebagian besar variasi harga mobil.
     """)
     st.markdown("---")
     st.caption("Aplikasi Prediksi Harga Mobil Bekas")
@@ -179,7 +178,6 @@ with st.sidebar:
 
 # --- Bagian Judul Utama dan Deskripsi (di Main Content) ---
 st.title("🚗 Prediksi Harga Mobil Bekas")
-st.markdown("Gunakan aplikasi ini untuk memprediksi harga mobil bekas berdasarkan data kendaraan Anda.")
 
 # --- Tambahkan Gambar di Konten Utama ---
 try:
