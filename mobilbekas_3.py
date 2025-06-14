@@ -178,6 +178,7 @@ with st.sidebar:
 
 # --- Bagian Judul Utama dan Deskripsi (di Main Content) ---
 st.title("🚗 Prediksi Harga Mobil Bekas")
+st.markdown("Gunakan aplikasi ini untuk memprediksi harga mobil bekas berdasarkan data kendaraan Anda.")
 
 # --- Tambahkan Gambar di Konten Utama ---
 try:
