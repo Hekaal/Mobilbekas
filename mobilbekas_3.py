@@ -7,9 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1oTJa3uvGuWdgeOvlP-u_IQ4uTozBLftp
 """
 
-from IPython import get_ipython
-from IPython.display import display
-
 #!pip install streamlit
 #!pip install catboost
 
