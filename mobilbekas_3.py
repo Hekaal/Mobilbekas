@@ -175,11 +175,6 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Aplikasi Prediksi Harga Mobil Bekas")
 
-
-# --- Bagian Judul Utama dan Deskripsi (di Main Content) ---
-st.title("Prediksi Harga Mobil Bekas")
-st.markdown("Gunakan aplikasi ini untuk memprediksi harga mobil bekas berdasarkan data kendaraan Anda.")
-
 # --- Tambahkan Gambar di Konten Utama ---
 try:
     # Nama file SVG Anda
@@ -221,7 +216,12 @@ except FileNotFoundError:
     st.caption(f"File SVG '{svg_file_name}' tidak ditemukan. Pastikan ada di direktori yang sama di repositori Anda.")
 except Exception as e:
     st.caption(f"Tidak dapat menampilkan gambar SVG: {e}")
-    
+
+# --- Bagian Judul Utama dan Deskripsi (di Main Content) ---
+st.title("Prediksi Harga Mobil Bekas")
+st.markdown("Gunakan aplikasi ini untuk memprediksi harga mobil bekas berdasarkan data kendaraan Anda.")
+
+
 st.subheader("Input Detail Mobil")
 
 # --- Input Pengguna dengan Filter Berurutan dan Layout Kolom ---
